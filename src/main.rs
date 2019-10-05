@@ -4,6 +4,7 @@ use tcod::console::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
+mod items;
 // size of the map
 const MAP_WIDTH: i32 = 80;
 const MAP_HEIGHT: i32 = 45;
@@ -26,7 +27,7 @@ struct Tcod {
     con: Offscreen,
 }
 
-fn handle_keys(tcod: &mut Tcod, object: &mut Object) -> bool {
+fn handle_keys(tcod: &mut Tcod, object: &mut items::object::Object) -> bool {
     // todo: handle keys
     let key = tcod.root.wait_for_keypress(true);
     match key {
@@ -40,58 +41,13 @@ fn handle_keys(tcod: &mut Tcod, object: &mut Object) -> bool {
     }
     false
 }
-#[derive(Debug)]
-struct Object {
-    x: i32,
-    y: i32,
-    char: char,
-    color: Color,
-}
-
-impl Object {
-    pub fn new(x: i32, y: i32, char: char, color: Color) -> Self {
-        Object { x, y, char, color }
-    }
-
-    pub fn move_by(&mut self, dx: i32, dy: i32) {
-        self.x += dx;
-        self.y += dy;
-    }
-
-    pub fn draw(&self, con: &mut dyn Console) {
-        con.set_default_foreground(self.color);
-        con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Tile {
-    blocked: bool,
-    block_sight: bool,
-}
-
-impl Tile {
-    pub fn empty() -> Self {
-        Tile {
-            blocked: false,
-            block_sight: false,
-        }
-    }
-
-    pub fn wall() -> Self {
-        Tile {
-            blocked: true,
-            block_sight: true,
-        }
-    }
-}
 
 fn main() {
     let root = Root::initializer()
     .font("arial10x10.png", FontLayout::Tcod)
     .font_type(FontType::Greyscale)
     .size(SCREEN_WIDTH, SCREEN_HEIGHT)
-    .title("Rust/libtcod tutorial")
+    .title("RogueLike-rust")
     .init();
 
     let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -99,8 +55,8 @@ fn main() {
     let mut tcod = Tcod { root, con };
     tcod::system::set_fps(LIMIT_FPS);
 
-    let character = Object::new(30, 40, '%', colors::GREEN);
-    let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
+    let character = items::object::Object::new(30, 40, '%', colors::GREEN);
+    let npc = items::object::Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
     let mut objects = [character, npc];
 
     while !tcod.root.window_closed() {
