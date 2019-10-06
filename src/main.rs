@@ -4,10 +4,11 @@ use tcod::console::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
-mod items;
-// size of the map
-const MAP_WIDTH: i32 = 80;
-const MAP_HEIGHT: i32 = 45;
+mod object;
+use object::Object;
+mod tile;
+mod game;
+use game::Game;
 
 // actual size of the window
 const SCREEN_WIDTH: i32 = 80;
@@ -22,12 +23,16 @@ const COLOR_DARK_GROUND: Color = Color {
     b: 150,
 };
 
+// size of the map (duplicated from game, TODO create a constant file)
+const MAP_WIDTH: i32 = 80;
+const MAP_HEIGHT: i32 = 45;
+
 struct Tcod {
     root: Root,
     con: Offscreen,
 }
 
-fn handle_keys(tcod: &mut Tcod, object: &mut items::object::Object) -> bool {
+fn handle_keys(tcod: &mut Tcod, object: &mut Object) -> bool {
     // todo: handle keys
     let key = tcod.root.wait_for_keypress(true);
     match key {
@@ -42,6 +47,35 @@ fn handle_keys(tcod: &mut Tcod, object: &mut items::object::Object) -> bool {
     false
 }
 
+fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
+    // draw all objects in the list
+    for object in objects {
+        object.draw(&mut tcod.con);
+    }
+    // go through all tiles, and set their background color
+    for y in 0..MAP_HEIGHT {
+        for x in 0..MAP_WIDTH {
+            let wall = game.get_map()[x as usize][y as usize].is_block_sight();
+            if wall {
+                tcod.con
+                    .set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);
+            } else {
+                tcod.con
+                    .set_char_background(x, y, COLOR_DARK_GROUND, BackgroundFlag::Set);
+            }
+        }
+    }
+    blit(
+        &tcod.con,
+        (0, 0),
+        (MAP_WIDTH, MAP_HEIGHT),
+        &mut tcod.root,
+        (0, 0),
+        1.0,
+        1.0,
+    );
+}
+
 fn main() {
     let root = Root::initializer()
     .font("arial10x10.png", FontLayout::Tcod)
@@ -50,13 +84,13 @@ fn main() {
     .title("RogueLike-rust")
     .init();
 
-    let con = Offscreen::new(SCREEN_WIDTH, SCREEN_HEIGHT);
-
+    let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
     let mut tcod = Tcod { root, con };
     tcod::system::set_fps(LIMIT_FPS);
 
-    let character = items::object::Object::new(30, 40, '%', colors::GREEN);
-    let npc = items::object::Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
+    let game = Game::new();
+    let character = Object::new(30, 40, '%', colors::GREEN);
+    let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
     let mut objects = [character, npc];
 
     while !tcod.root.window_closed() {
@@ -67,18 +101,7 @@ fn main() {
             break;
         }
         tcod.con.set_default_foreground(colors::WHITE);
-        for object in &objects {
-            object.draw(&mut tcod.con);
-        }
-        blit(
-            &tcod.con,
-            (0, 0),
-            (SCREEN_WIDTH, SCREEN_HEIGHT),
-            &mut tcod.root,
-            (0, 0),
-            1.0,
-            1.0,
-        );
+        render_all(&mut tcod, &game, &objects);
         tcod.root.flush();
         tcod.root.wait_for_keypress(true);
     }
