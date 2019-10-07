@@ -8,6 +8,7 @@ mod object;
 use object::Object;
 mod tile;
 mod game;
+mod rect;
 use game::Game;
 
 // actual size of the window
