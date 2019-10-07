@@ -55,7 +55,7 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
     // go through all tiles, and set their background color
     for y in 0..MAP_HEIGHT {
         for x in 0..MAP_WIDTH {
-            let wall = game.get_map()[x as usize][y as usize].is_block_sight();
+            let wall = game.map[x as usize][y as usize].is_block_sight();
             if wall {
                 tcod.con
                     .set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);

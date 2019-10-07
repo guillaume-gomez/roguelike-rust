@@ -8,15 +8,13 @@ const MAP_HEIGHT: i32 = 45;
 pub type Map = Vec<Vec<Tile>>;
 
 pub struct Game {
-  map: Map,
+  pub map: Map,
 }
 
 impl Game {
   pub fn new() -> Self {
     Game { map: make_map() }
   }
-
-  pub fn get_map(&self) -> &Map { &self.map }
 }
 
 fn make_map() -> Map {
