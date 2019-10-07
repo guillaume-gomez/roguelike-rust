@@ -18,7 +18,7 @@ impl Object {
   }
 
   pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game) {
-    if !game.get_map()[(self.x + dx) as usize][(self.y + dy) as usize].is_blocked() {
+    if !game.map[(self.x + dx) as usize][(self.y + dy) as usize].is_blocked() {
       self.x += dx;
       self.y += dy;
     }

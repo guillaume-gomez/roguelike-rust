@@ -90,7 +90,7 @@ fn main() {
     tcod::system::set_fps(LIMIT_FPS);
 
     let game = Game::new();
-    let character = Object::new(30, 40, '%', colors::GREEN);
+    let character = Object::new(25, 23, '%', colors::GREEN);
     let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
     let mut objects = [character, npc];
 
