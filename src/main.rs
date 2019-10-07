@@ -32,15 +32,15 @@ struct Tcod {
     con: Offscreen,
 }
 
-fn handle_keys(tcod: &mut Tcod, object: &mut Object) -> bool {
+fn handle_keys(tcod: &mut Tcod, game: &Game, object: &mut Object) -> bool {
     // todo: handle keys
     let key = tcod.root.wait_for_keypress(true);
     match key {
         // movement keys
-        Key { code: Up, .. } => object.move_by(0, -1),
-        Key { code: Down, .. } => object.move_by(0, 1),
-        Key { code: Left, .. } => object.move_by(-1, 0),
-        Key { code: Right, .. } => object.move_by(1, 0),
+        Key { code: Up, .. } => object.move_by(0, -1, game),
+        Key { code: Down, .. } => object.move_by(0, 1, game),
+        Key { code: Left, .. } => object.move_by(-1, 0, game),
+        Key { code: Right, .. } => object.move_by(1, 0, game),
 
         _ => {}
     }
@@ -96,7 +96,7 @@ fn main() {
     while !tcod.root.window_closed() {
         tcod.con.clear();
         let player = &mut objects[0];
-        let exit = handle_keys(&mut tcod, player);
+        let exit = handle_keys(&mut tcod, &game, player);
         if exit {
             break;
         }

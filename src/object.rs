@@ -1,3 +1,4 @@
+use crate::game::Game;
 use tcod::colors::Color;
 use tcod::console::Console;
 use tcod::console::BackgroundFlag;
@@ -16,9 +17,11 @@ impl Object {
     Object { x, y, char, color }
   }
 
-  pub fn move_by(&mut self, dx: i32, dy: i32) {
-    self.x += dx;
-    self.y += dy;
+  pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game) {
+    if !game.get_map()[(self.x + dx) as usize][(self.y + dy) as usize].is_blocked() {
+      self.x += dx;
+      self.y += dy;
+    }
   }
 
   pub fn draw(&self, con: &mut dyn Console) {
