@@ -6,10 +6,10 @@ use tcod::console::BackgroundFlag;
 
 #[derive(Debug)]
 pub struct Object {
-x: i32,
-y: i32,
-char: char,
-color: Color,
+  x: i32,
+  y: i32,
+  char: char,
+  color: Color,
 }
 
 impl Object {
@@ -27,5 +27,14 @@ impl Object {
   pub fn draw(&self, con: &mut dyn Console) {
     con.set_default_foreground(self.color);
     con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
+  }
+
+
+  pub fn set_x(&mut self, x: i32) {
+    self.x = x;
+  }
+
+  pub fn set_y(&mut self, y: i32) {
+    self.y = y;
   }
 }
