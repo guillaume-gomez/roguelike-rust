@@ -1,14 +1,15 @@
 use tcod::colors;
+use tcod::map::{FovAlgorithm, Map as FovMap};
 use tcod::colors::Color;
 use tcod::console::*;
 use tcod::input::Key;
 use tcod::input::KeyCode::*;
 
 mod object;
-use object::Object;
 mod tile;
 mod game;
 mod rect;
+use object::Object;
 use game::Game;
 
 // actual size of the window
@@ -17,20 +18,25 @@ const SCREEN_HEIGHT: i32 = 50;
 
 const LIMIT_FPS: i32 = 20; // 20 frames-per-second maximum
 
+const COLOR_DARK_GROUND: Color = Color { r: 50, g: 50, b: 150 };
+const COLOR_LIGHT_GROUND: Color = Color { r: 200, g: 180, b: 50 };
+
 const COLOR_DARK_WALL: Color = Color { r: 0, g: 0, b: 100 };
-const COLOR_DARK_GROUND: Color = Color {
-    r: 50,
-    g: 50,
-    b: 150,
-};
+const COLOR_LIGHT_WALL: Color = Color { r: 130, g: 110, b: 50 };
+
 
 // size of the map (duplicated from game, TODO create a constant file)
 const MAP_WIDTH: i32 = 80;
 const MAP_HEIGHT: i32 = 45;
 
+const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // default FOV algorithm
+const FOV_LIGHT_WALLS: bool = true; // light walls or not
+const TORCH_RADIUS: i32 = 10;
+
 struct Tcod {
     root: Root,
     con: Offscreen,
+    fov: FovMap,
 }
 
 fn handle_keys(tcod: &mut Tcod, game: &Game, object: &mut Object) -> bool {
@@ -86,13 +92,14 @@ fn main() {
     .init();
 
     let con = Offscreen::new(MAP_WIDTH, MAP_HEIGHT);
-    let mut tcod = Tcod { root, con };
+    let fov = FovMap::new(MAP_WIDTH, MAP_HEIGHT);
+    let mut tcod = Tcod { root, con, fov };
     tcod::system::set_fps(LIMIT_FPS);
 
-    let game = Game::new();
-    let character = Object::new(25, 23, '%', colors::GREEN);
+    let character = Object::new(0, 0, '%', colors::GREEN);
     let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
     let mut objects = [character, npc];
+    let game = Game::new(&mut objects[0]);
 
     while !tcod.root.window_closed() {
         tcod.con.clear();
