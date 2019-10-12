@@ -74,8 +74,8 @@ fn make_map(player: &mut Object) -> Map {
           create_h_tunnel(prev_x, new_x, new_y, &mut map);
         }
       }
-    }
     rooms.push(new_room);
+    }
   }
   map
 }
