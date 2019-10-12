@@ -29,6 +29,13 @@ impl Object {
     con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
   }
 
+  pub fn get_x(&self) -> i32 {
+    self.x
+  }
+
+  pub fn get_y(&self) -> i32{
+    self.y
+  }
 
   pub fn set_x(&mut self, x: i32) {
     self.x = x;
