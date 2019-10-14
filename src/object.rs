@@ -10,11 +10,14 @@ pub struct Object {
   y: i32,
   char: char,
   color: Color,
+  name: String,
+  blocks: bool,
+  alive: bool,
 }
 
 impl Object {
-  pub fn new(x: i32, y: i32, char: char, color: Color) -> Self {
-    Object { x, y, char, color }
+  pub fn new(x: i32, y: i32, char: char, color: Color, name: &str, blocks: bool) -> Self {
+    Object { x, y, char, color, name: name.to_string(), blocks, alive: false }
   }
 
   pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game) {
