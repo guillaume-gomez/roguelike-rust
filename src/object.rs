@@ -29,6 +29,11 @@ impl Object {
     con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
   }
 
+  pub fn set_pos(&mut self, x: i32, y: i32) {
+    self.x = x;
+    self.y = y;
+  }
+
   pub fn get_x(&self) -> i32 {
     self.x
   }
@@ -44,4 +49,9 @@ impl Object {
   pub fn set_y(&mut self, y: i32) {
     self.y = y;
   }
+
+  pub fn pos(&self) -> (i32, i32) {
+    (self.x, self.y)
+  }
+
 }
