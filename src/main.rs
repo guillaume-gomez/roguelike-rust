@@ -1,5 +1,5 @@
-use tcod::colors;
 use tcod::map::{FovAlgorithm, Map as FovMap};
+use tcod::colors;
 use tcod::colors::Color;
 use tcod::console::*;
 use tcod::input::Key;
@@ -108,10 +108,9 @@ fn main() {
   tcod::system::set_fps(LIMIT_FPS);
 
   let mut previous_player_position = (-1, -1);
-  let character = Object::new(0, 0, '%', colors::GREEN);
-  let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', colors::YELLOW);
-  let mut objects = [character, npc];
-  let game = Game::new(&mut objects[0]);
+  let character = Object::new(0, 0, '%', colors::GREEN, "player", true);
+  let mut objects = vec![character];
+  let game = Game::new(&mut objects);
 
   while !tcod.root.window_closed() {
     tcod.con.clear();

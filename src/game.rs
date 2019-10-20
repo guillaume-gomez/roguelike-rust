@@ -1,9 +1,11 @@
 use std::cmp;
 use rand::Rng;
+use tcod::colors;
 
 use crate::tile::Tile;
 use crate::rect::Rect;
 use crate::object::Object;
+
 
 // size of the map
 const MAP_WIDTH: i32 = 80;
@@ -12,6 +14,10 @@ const MAP_HEIGHT: i32 = 45;
 const ROOM_MAX_SIZE: i32 = 10;
 const ROOM_MIN_SIZE: i32 = 6;
 const MAX_ROOMS: i32 = 30;
+
+const MAX_ROOM_MONSTERS: i32 = 3;
+
+const PLAYER_INDEX: usize = 0;
 
 //#[derive(Clone, Copy)]
 pub type Map = Vec<Vec<Tile>>;
@@ -22,12 +28,12 @@ pub struct Game {
 }
 
 impl Game {
-  pub fn new(player: &mut Object) -> Self {
-    Game { map: make_map(player) }
+  pub fn new(objects: &mut[Object]) -> Self {
+    Game { map: make_map(objects) }
   }
 }
 
-fn make_map(player: &mut Object) -> Map {
+fn make_map(objects: &mut[Object]) -> Map {
   let mut rooms = vec![];
   let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
@@ -57,8 +63,7 @@ fn make_map(player: &mut Object) -> Map {
 
       if rooms.is_empty() {
         // this is the first room, where the player starts at
-        player.set_x(new_x);
-        player.set_y(new_y);
+        objects[PLAYER_INDEX].set_pos(new_x, new_y);
       } else {
         // center coordinates of the previous room
         let (prev_x, prev_y) = rooms[rooms.len() - 1].center();
@@ -101,4 +106,35 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
     for y in cmp::min(y1, y2)..(cmp::max(y1, y2) + 1) {
         map[x as usize][y as usize] = Tile::empty();
     }
+}
+
+fn place_objects(room: Rect, objects: &mut Vec<Object>) {
+  // choose random number of monsters
+  let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
+
+  for _ in 0..num_monsters {
+    // choose random spot for this monster
+    let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
+    let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
+
+    let monster = if rand::random::<f32>() < 0.8 {  // 80% chance of getting an orc
+        // create an orc
+        Object::new(x, y, 'o', colors::DESATURATED_GREEN, "orc", true)
+    } else {
+        Object::new(x, y, 'T', colors::DARKER_GREEN, "other monster", true)
+    };
+
+    objects.push(monster);
+  }
+}
+
+fn is_blocked(x: i32, y: i32, map: &Map, objects: &[Object]) -> bool {
+  // first test the map tile
+  if map[x as usize][y as usize].is_blocked() {
+    return true;
+  }
+  // now check for any blocking objects
+  objects
+    .iter()
+    .any(|object| object.is_blocked() && object.pos() == (x, y))
 }

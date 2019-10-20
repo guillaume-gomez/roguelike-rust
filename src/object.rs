@@ -57,4 +57,8 @@ impl Object {
     (self.x, self.y)
   }
 
+  pub fn is_blocked(&self) -> bool {
+    self.blocks
+  }
+
 }
