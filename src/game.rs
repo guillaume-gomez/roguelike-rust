@@ -17,8 +17,6 @@ const MAX_ROOMS: i32 = 30;
 
 const MAX_ROOM_MONSTERS: i32 = 3;
 
-const PLAYER_INDEX: usize = 0;
-
 //#[derive(Clone, Copy)]
 pub type Map = Vec<Vec<Tile>>;
 
@@ -28,12 +26,12 @@ pub struct Game {
 }
 
 impl Game {
-  pub fn new(objects: &mut[Object]) -> Self {
-    Game { map: make_map(objects) }
+  pub fn new(player: &mut Object, other_objects: &mut Vec<Object> ) -> Self {
+    Game { map: make_map(player, other_objects) }
   }
 }
 
-fn make_map(objects: &mut[Object]) -> Map {
+fn make_map(player: &mut Object, other_objects: &mut Vec<Object>) -> Map {
   let mut rooms = vec![];
   let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
@@ -58,12 +56,14 @@ fn make_map(objects: &mut[Object]) -> Map {
       // "paint" it to the map's tiles
       create_room(new_room, &mut map);
 
+      place_objects(new_room, other_objects);
+
       // center coordinates of the new room, will be useful later
       let (new_x, new_y) = new_room.center();
 
       if rooms.is_empty() {
         // this is the first room, where the player starts at
-        objects[PLAYER_INDEX].set_pos(new_x, new_y);
+        player.set_pos(new_x, new_y);
       } else {
         // center coordinates of the previous room
         let (prev_x, prev_y) = rooms[rooms.len() - 1].center();
@@ -117,24 +117,13 @@ fn place_objects(room: Rect, objects: &mut Vec<Object>) {
     let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
     let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
 
-    let monster = if rand::random::<f32>() < 0.8 {  // 80% chance of getting an orc
+    let mut monster = if rand::random::<f32>() < 0.8 {  // 80% chance of getting an orc
         // create an orc
         Object::new(x, y, 'o', colors::DESATURATED_GREEN, "orc", true)
     } else {
-        Object::new(x, y, 'T', colors::DARKER_GREEN, "other monster", true)
+        Object::new(x, y, 'T', colors::DARKER_GREEN, "other monster", true) 
     };
-
+    monster.alive();
     objects.push(monster);
   }
-}
-
-fn is_blocked(x: i32, y: i32, map: &Map, objects: &[Object]) -> bool {
-  // first test the map tile
-  if map[x as usize][y as usize].is_blocked() {
-    return true;
-  }
-  // now check for any blocking objects
-  objects
-    .iter()
-    .any(|object| object.is_blocked() && object.pos() == (x, y))
 }

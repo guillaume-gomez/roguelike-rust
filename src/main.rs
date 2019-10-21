@@ -31,7 +31,7 @@ const MAP_HEIGHT: i32 = 45;
 
 const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // default FOV algorithm
 const FOV_LIGHT_WALLS: bool = true; // light walls or not
-const TORCH_RADIUS: i32 = 10;
+const TORCH_RADIUS: i32 = 500000;
 
 struct Tcod {
     root: Root,
@@ -39,28 +39,30 @@ struct Tcod {
     fov: FovMap,
 }
 
-fn handle_keys(tcod: &mut Tcod, game: &Game, object: &mut Object) -> bool {
+fn handle_keys(tcod: &mut Tcod, game: &Game, player: &mut Object, other_objects: &[Object]) -> bool {
     // todo: handle keys
     let key = tcod.root.wait_for_keypress(true);
     match key {
         // movement keys
-        Key { code: Up, .. } => object.move_by(0, -1, game),
-        Key { code: Down, .. } => object.move_by(0, 1, game),
-        Key { code: Left, .. } => object.move_by(-1, 0, game),
-        Key { code: Right, .. } => object.move_by(1, 0, game),
+        Key { code: Up, .. } => player.move_by(0, -1, game, other_objects),
+        Key { code: Down, .. } => player.move_by(0, 1, game, other_objects),
+        Key { code: Left, .. } => player.move_by(-1, 0, game, other_objects),
+        Key { code: Right, .. } => player.move_by(1, 0, game, other_objects),
 
         _ => {}
     }
     false
 }
 
-fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: bool) {
+fn render_all(tcod: &mut Tcod, game: &Game, player: &Object, objects: &[Object], fov_recompute: bool) {
   if fov_recompute {
     // recompute FOV if needed (the player moved or something)
-    let player = &objects[0];
     tcod.fov.compute_fov(player.get_x(), player.get_y(), TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
   }
-  
+
+
+  //render player
+  player.draw(&mut tcod.con);
   // draw all objects in the list
   for object in objects {
     if tcod.fov.is_in_fov(object.get_x(), object.get_y()) {
@@ -108,21 +110,21 @@ fn main() {
   tcod::system::set_fps(LIMIT_FPS);
 
   let mut previous_player_position = (-1, -1);
-  let character = Object::new(0, 0, '%', colors::GREEN, "player", true);
-  let mut objects = vec![character];
-  let game = Game::new(&mut objects);
+  let mut player = Object::new(0, 0, '%', colors::GREEN, "player", true);
+  player.alive();
+  let mut other_objects = vec![];
+  let game = Game::new(&mut player, &mut other_objects);
 
   while !tcod.root.window_closed() {
     tcod.con.clear();
-    let player = &mut objects[0];
-    previous_player_position = (player.get_x(), player.get_y());
-    let exit = handle_keys(&mut tcod, &game, player);
+    previous_player_position = player.pos();
+    let exit = handle_keys(&mut tcod, &game, &mut player, &other_objects);
     if exit {
       break;
     }
     tcod.con.set_default_foreground(colors::WHITE);
     let fov_recompute = previous_player_position != (player.get_x(), player.get_y());
-    render_all(&mut tcod, &game, &objects, fov_recompute);
+    render_all(&mut tcod, &game, &player, &other_objects, fov_recompute);
     tcod.root.flush();
     tcod.root.wait_for_keypress(true);
   }
