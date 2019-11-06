@@ -1,9 +1,14 @@
+use crate::fighter::Fighter;
 use crate::game::Game;
 use crate::game::Map;
 use tcod::colors::Color;
 use tcod::console::Console;
 use tcod::console::BackgroundFlag;
 
+#[derive(Clone, Debug, PartialEq)]
+enum Ai {
+    Basic,
+}
 
 #[derive(Debug)]
 pub struct Object {
@@ -14,17 +19,66 @@ pub struct Object {
   name: String,
   blocks: bool,
   alive: bool,
+  fighter: Option<Fighter>,
+  ai: Option<Ai>, 
 }
 
 impl Object {
   pub fn new(x: i32, y: i32, char: char, color: Color, name: &str, blocks: bool) -> Self {
-    Object { x, y, char, color, name: name.to_string(), blocks, alive: false }
+    Object { 
+      x, 
+      y, 
+      char,
+      color,
+      name: name.to_string(),
+      blocks,
+      alive: false,
+      fighter: None,
+      ai: None,
+    }
   }
 
-  pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
+  pub fn create_player(x: i32, y: i32) -> Self {
+    Object { 
+      x, 
+      y, 
+      char: '%', 
+      color: tcod::colors::GREEN, 
+      name: "player".to_string(), 
+      blocks: true,
+      alive: true,
+      fighter:  Some(Fighter {
+        max_hp: 30,
+        hp: 30,
+        defense: 2,
+        power: 5,
+      }),
+      ai: None
+    }
+  }
+
+  fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
     let (x, y) = self.pos();
     if !is_blocked(x + dx, y + dy, &game.map, other_objects) {
       self.set_pos(x + dx, y + dy);
+    }
+  }
+
+  pub fn move_or_attack(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
+    
+    let target_id = other_objects.iter().position(|object| object.pos() == self.pos());
+
+    // attack if target found, move otherwise
+    match target_id {
+      Some(target_id) => {
+        println!(
+            "The {} laughs at your puny efforts to attack him!",
+            other_objects[target_id].name
+        );
+      }
+      None => {
+        self.move_by(dx, dy, &game, other_objects);
+      }
     }
   }
 
@@ -68,6 +122,10 @@ impl Object {
 
   pub fn die(&mut self) {
     self.alive = false;
+  }
+
+  pub fn is_alive(&self) -> bool {
+    self.alive
   }
 
 }
