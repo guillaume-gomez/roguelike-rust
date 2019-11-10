@@ -1,5 +1,6 @@
 use crate::Tcod;
 use crate::fighter::Fighter;
+use crate::death_callback::DeathCallback;
 use crate::game::Game;
 use crate::game::Map;
 use tcod::colors::Color;
@@ -53,7 +54,7 @@ impl Object {
         hp: 30,
         defense: 2,
         power: 5,
-        //on_death: DeathCallback::Player
+        on_death: DeathCallback::Player
       }),
       ai: None
     }
@@ -73,7 +74,7 @@ impl Object {
         hp: 10,
         defense: 0,
         power: 3,
-        //on_death: DeathCallback::Monster,
+        on_death: DeathCallback::Monster,
       }),
       ai: Some(Ai::Basic)
     }
@@ -93,7 +94,7 @@ impl Object {
         hp: 16,
         defense: 1,
         power: 4,
-        //on_death: DeathCallback::Monster,
+        on_death: DeathCallback::Monster,
       }),
       ai: Some(Ai::Basic)
     }
@@ -110,6 +111,13 @@ impl Object {
     if let Some(fighter) = self.fighter.as_mut() {
       if damage > 0 {
           fighter.hp -= damage;
+      }
+    }
+    // check for death, call the death function
+    if let Some(fighter) = self.fighter {
+      if fighter.hp <= 0 {
+        self.die();
+        fighter.on_death.callback(self);
       }
     }
   }
@@ -238,6 +246,18 @@ impl Object {
 
   pub fn get_name(&self) -> String {
     self.name.to_string()
+  }
+
+  pub fn display_death(&mut self) {
+    self.char = '%';
+    self.color = tcod::colors::DARK_RED;
+  }
+
+  pub fn remove_enemy_interactions(&mut self) {
+    self.blocks = false;
+    self.fighter = None;
+    self.ai = None;
+    self.name = format!("remains of {}", self.name);
   }
 
 }

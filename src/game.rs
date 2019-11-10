@@ -1,6 +1,7 @@
+use crate::object::is_blocked;
 use std::cmp;
 use rand::Rng;
-use tcod::colors;
+
 
 use crate::tile::Tile;
 use crate::rect::Rect;
@@ -22,7 +23,7 @@ pub type Map = Vec<Vec<Tile>>;
 
 
 pub struct Game {
-  pub map: Map,
+  pub map: Map
 }
 
 impl Game {
@@ -56,7 +57,7 @@ fn make_map(player: &mut Object, other_objects: &mut Vec<Object>) -> Map {
       // "paint" it to the map's tiles
       create_room(new_room, &mut map);
 
-      place_objects(new_room, other_objects);
+      place_objects(new_room, other_objects, &mut map);
 
       // center coordinates of the new room, will be useful later
       let (new_x, new_y) = new_room.center();
@@ -108,7 +109,7 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
     }
 }
 
-fn place_objects(room: Rect, objects: &mut Vec<Object>) {
+fn place_objects(room: Rect, objects: &mut Vec<Object>, map: &Map) {
   // choose random number of monsters
   let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
 
@@ -117,13 +118,18 @@ fn place_objects(room: Rect, objects: &mut Vec<Object>) {
     let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
     let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
 
-    let mut monster = if rand::random::<f32>() < 0.8 {  // 80% chance of getting an orc
-        // create an orc
-        Object::new(x, y, 'o', colors::DESATURATED_GREEN, "orc", true)
-    } else {
-        Object::new(x, y, 'T', colors::DARKER_GREEN, "other monster", true) 
-    };
-    monster.alive();
-    objects.push(monster);
+    if !is_blocked(x, y, map, objects) {
+      let mut monster = if rand::random::<f32>() < 0.8 {
+          // 80% chance of getting an orc
+          // create an orc
+          Object::create_orc(x, y)
+        } else {
+          // create a troll
+          Object::create_troll(x, y)
+        };
+      monster.alive();
+      objects.push(monster);
+    }
+   
   }
 }

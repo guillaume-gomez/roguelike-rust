@@ -1,16 +1,17 @@
 use tcod::map::{FovAlgorithm, Map as FovMap};
-use tcod::colors;
+
 use tcod::colors::Color;
 use tcod::console::*;
-use tcod::input::Key;
-use tcod::input::KeyCode::*;
 
 mod object;
 mod tile;
 mod game;
 mod rect;
+mod fighter;
+mod death_callback;
 use object::Object;
 use game::Game;
+
 
 // actual size of the window
 const SCREEN_WIDTH: i32 = 80;
@@ -31,7 +32,14 @@ const MAP_HEIGHT: i32 = 45;
 
 const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // default FOV algorithm
 const FOV_LIGHT_WALLS: bool = true; // light walls or not
-const TORCH_RADIUS: i32 = 500000;
+const TORCH_RADIUS: i32 = 10;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum PlayerAction {
+    TookTurn,
+    DidntTakeTurn,
+    Exit,
+}
 
 struct Tcod {
     root: Root,
@@ -39,19 +47,49 @@ struct Tcod {
     fov: FovMap,
 }
 
-fn handle_keys(tcod: &mut Tcod, game: &Game, player: &mut Object, other_objects: &[Object]) -> bool {
-    // todo: handle keys
-    let key = tcod.root.wait_for_keypress(true);
-    match key {
-        // movement keys
-        Key { code: Up, .. } => player.move_by(0, -1, game, other_objects),
-        Key { code: Down, .. } => player.move_by(0, 1, game, other_objects),
-        Key { code: Left, .. } => player.move_by(-1, 0, game, other_objects),
-        Key { code: Right, .. } => player.move_by(1, 0, game, other_objects),
+fn handle_keys(tcod: &mut Tcod, game: &Game, player: &mut Object, other_objects: &mut[Object]) -> PlayerAction {
+  use tcod::input::Key;
+    use tcod::input::KeyCode::*;
+    use PlayerAction::*;
 
-        _ => {}
+    let key = tcod.root.wait_for_keypress(true);
+    match (key, key.text(), player.is_alive()) {
+        (
+            Key {
+                code: Enter,
+                alt: true,
+                ..
+            },
+            _,
+            _,
+        ) => {
+            // Alt+Enter: toggle fullscreen
+            let fullscreen = tcod.root.is_fullscreen();
+            tcod.root.set_fullscreen(!fullscreen);
+            DidntTakeTurn
+        }
+        (Key { code: Escape, .. }, _, _) => Exit, // exit game
+
+        // movement keys
+        (Key { code: Up, .. }, _, true) => {
+           player.move_or_attack(0, -1, game, other_objects);
+            TookTurn
+        }
+        (Key { code: Down, .. }, _, true) => {
+            player.move_or_attack(0, 1, game, other_objects);
+            TookTurn
+        }
+        (Key { code: Left, .. }, _, true) => {
+            player.move_or_attack(-1, 0, game, other_objects);
+            TookTurn
+        }
+        (Key { code: Right, .. }, _, true) => {
+            player.move_or_attack(1, 0, game, other_objects);
+            TookTurn
+        }
+
+        _ => DidntTakeTurn,
     }
-    false
 }
 
 fn render_all(tcod: &mut Tcod, game: &Game, player: &Object, objects: &[Object], fov_recompute: bool) {
@@ -64,10 +102,12 @@ fn render_all(tcod: &mut Tcod, game: &Game, player: &Object, objects: &[Object],
   //render player
   player.draw(&mut tcod.con);
   // draw all objects in the list
+  
+  // TODO UNCOMMENT NEXT TIME
   for object in objects {
-    if tcod.fov.is_in_fov(object.get_x(), object.get_y()) {
+    //if tcod.fov.is_in_fov(object.get_x(), object.get_y()) {
       object.draw(&mut tcod.con);
-    }
+    //}
   }
   // go through all tiles, and set their background color
   for y in 0..MAP_HEIGHT {
@@ -110,22 +150,36 @@ fn main() {
   tcod::system::set_fps(LIMIT_FPS);
 
   let mut previous_player_position = (-1, -1);
-  let mut player = Object::new(0, 0, '%', colors::GREEN, "player", true);
-  player.alive();
+  let mut player = Object::create_player(0, 0);
   let mut other_objects = vec![];
   let game = Game::new(&mut player, &mut other_objects);
 
   while !tcod.root.window_closed() {
     tcod.con.clear();
-    previous_player_position = player.pos();
-    let exit = handle_keys(&mut tcod, &game, &mut player, &other_objects);
-    if exit {
-      break;
-    }
-    tcod.con.set_default_foreground(colors::WHITE);
-    let fov_recompute = previous_player_position != (player.get_x(), player.get_y());
+    
+    let fov_recompute = previous_player_position != (player.pos());
     render_all(&mut tcod, &game, &player, &other_objects, fov_recompute);
     tcod.root.flush();
-    tcod.root.wait_for_keypress(true);
+
+    previous_player_position = player.pos();
+    let player_action = handle_keys(&mut tcod, &game, &mut player, &mut other_objects);
+    if player_action == PlayerAction::Exit {
+      break;
+    }
+
+    // let monsters take their turn
+    if player.is_alive() && player_action != PlayerAction::DidntTakeTurn {
+      for id in 0..other_objects.len() {
+        if other_objects[id].get_ai().is_some() {
+            let mut other_objects_without_enemy = other_objects.clone();
+            other_objects_without_enemy.clone_from_slice(&other_objects);
+            let mut enemy = other_objects_without_enemy.remove(id);
+            enemy.ai_take_turn(&tcod, &game, &other_objects_without_enemy, &mut player);
+            
+            // update the original other object array
+            other_objects[id] = enemy;
+        }
+      }
+    }
   }
 }
