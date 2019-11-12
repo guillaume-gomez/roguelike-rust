@@ -1,5 +1,9 @@
+use tcod::colors;
+
+use crate::game::Game;
 use crate::object::Object;
 use crate::death_callback::DeathCallback;
+
 
 
 // combat-related properties and methods (monster, player, NPC).
@@ -13,18 +17,18 @@ pub struct Fighter {
 }
 
 impl Fighter {
-  pub fn player_death(player: &mut Object) {
+  pub fn player_death(player: &mut Object, game: &mut Game) {
     // the game ended!
-    println!("You died!");
+    game.messages.add("You died!", colors::RED);
 
     // for added effect, transform the player into a corpse!
     player.display_death();
   }
 
-  pub fn monster_death(monster: &mut Object) {
+  pub fn monster_death(monster: &mut Object, game: &mut Game) {
     // transform it into a nasty corpse! it doesn't block, can't be
     // attacked and doesn't move
-    println!("{} is dead!", monster.get_name());
+    game.messages.add(format!("{} is dead!", monster.get_name()), colors::ORANGE);
     monster.display_death();
     monster.remove_enemy_interactions();
   }

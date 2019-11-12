@@ -1,38 +1,33 @@
-use crate::object::is_blocked;
+use crate::player::Player;
 use std::cmp;
 use rand::Rng;
 
-
+use crate::constants::*;
+use crate::messages::Messages;
+use crate::object::is_blocked;
 use crate::tile::Tile;
 use crate::rect::Rect;
 use crate::object::Object;
-
-
-// size of the map
-const MAP_WIDTH: i32 = 80;
-const MAP_HEIGHT: i32 = 45;
-
-const ROOM_MAX_SIZE: i32 = 10;
-const ROOM_MIN_SIZE: i32 = 6;
-const MAX_ROOMS: i32 = 30;
-
-const MAX_ROOM_MONSTERS: i32 = 3;
 
 //#[derive(Clone, Copy)]
 pub type Map = Vec<Vec<Tile>>;
 
 
 pub struct Game {
-  pub map: Map
+  pub map: Map,
+  pub messages: Messages,
 }
 
 impl Game {
-  pub fn new(player: &mut Object, other_objects: &mut Vec<Object> ) -> Self {
-    Game { map: make_map(player, other_objects) }
+  pub fn new(player: &mut Player, other_objects: &mut Vec<Object> ) -> Self {
+    Game { 
+      map: make_map(player, other_objects),
+      messages: Messages::new(),
+    }
   }
 }
 
-fn make_map(player: &mut Object, other_objects: &mut Vec<Object>) -> Map {
+fn make_map(player: &mut Player, other_objects: &mut Vec<Object>) -> Map {
   let mut rooms = vec![];
   let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
@@ -130,6 +125,21 @@ fn place_objects(room: Rect, objects: &mut Vec<Object>, map: &Map) {
       monster.alive();
       objects.push(monster);
     }
-   
+  }
+
+  // choose random number of items
+  let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+
+  for _ in 0..num_items {
+    // choose random spot for this item
+    let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
+    let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
+
+    // only place it if the tile is not blocked
+    if !is_blocked(x, y, map, objects) {
+      // create a healing potion
+      let object = Object::create_potion(x, y);
+      objects.push(object);
+    }
   }
 }

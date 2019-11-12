@@ -1,3 +1,4 @@
+use crate::player::Player;
 use crate::Tcod;
 use crate::fighter::Fighter;
 use crate::death_callback::DeathCallback;
@@ -14,15 +15,15 @@ pub enum Ai {
 
 #[derive(Debug, Clone)]
 pub struct Object {
-  x: i32,
-  y: i32,
-  char: char,
-  color: Color,
-  name: String,
-  blocks: bool,
-  alive: bool,
-  fighter: Option<Fighter>,
-  ai: Option<Ai>, 
+  pub x: i32,
+  pub y: i32,
+  pub char: char,
+  pub color: Color,
+  pub name: String,
+  pub blocks: bool,
+  pub alive: bool,
+  pub fighter: Option<Fighter>,
+  pub ai: Option<Ai>, 
 }
 
 impl Object {
@@ -37,26 +38,6 @@ impl Object {
       alive: false,
       fighter: None,
       ai: None,
-    }
-  }
-
-  pub fn create_player(x: i32, y: i32) -> Self {
-    Object { 
-      x, 
-      y, 
-      char: '%', 
-      color: tcod::colors::GREEN, 
-      name: "player".to_string(), 
-      blocks: true,
-      alive: true,
-      fighter:  Some(Fighter {
-        max_hp: 30,
-        hp: 30,
-        defense: 2,
-        power: 5,
-        on_death: DeathCallback::Player
-      }),
-      ai: None
     }
   }
 
@@ -100,14 +81,28 @@ impl Object {
     }
   }
 
-  fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
+  pub fn create_potion(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '!',
+      name: "healing potion".to_string(),
+      color: tcod::colors::VIOLET,
+      blocks: false,
+      alive: false,
+      ai: None,
+      fighter: None,
+    }
+  }
+
+  pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
     let (x, y) = self.pos();
     if !is_blocked(x + dx, y + dy, &game.map, other_objects) {
       self.set_pos(x + dx, y + dy);
     }
   }
 
-  pub fn take_damage(&mut self, damage: i32) {
+  pub fn take_damage(&mut self, damage: i32, game: &mut Game) {
     if let Some(fighter) = self.fighter.as_mut() {
       if damage > 0 {
           fighter.hp -= damage;
@@ -117,44 +112,26 @@ impl Object {
     if let Some(fighter) = self.fighter {
       if fighter.hp <= 0 {
         self.die();
-        fighter.on_death.callback(self);
+        fighter.on_death.callback(self, game);
       }
     }
   }
 
-  pub fn attack(&mut self, target: &mut Object) {
+  pub fn attack(&mut self, target: &mut Player, game: &mut Game) {
     // a simple formula for attack damage
-    let damage = self.fighter.map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+    let damage = self.fighter.map_or(0, |f| f.power) - target.get_fighter().map_or(0, |f| f.defense);
     if damage > 0 {
       // make the target take some damage
-      println!(
-        "{} attacks {} for {} hit points.",
-        self.name, target.name, damage
+      game.messages.add(
+        format!("{} attacks {} for {} hit points.", self.name, target.get_name(), damage),
+        tcod::colors::WHITE
       );
-      target.take_damage(damage);
+      target.take_damage(damage, game);
     } else {
-      println!(
-        "{} attacks {} but it has no effect!",
-        self.name, target.name
+      game.messages.add(
+        format!("{} attacks {} but it has no effect!", self.name, target.get_name()),
+        tcod::colors::WHITE
       );
-    }
-  }
-
-  pub fn move_or_attack(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &mut [Object]) {
-    let x = self.x + dx;
-    let y = self.y + dy;
-    
-    let target_id = other_objects
-      .iter()
-      .position(|object| object.fighter.is_some() && object.pos() == (x, y));
-    // attack if target found, move otherwise
-    match target_id {
-      Some(target_id) => {
-        self.attack(&mut other_objects[target_id]);
-      }
-      None => {
-        self.move_by(dx, dy, &game, other_objects);
-      }
     }
   }
 
@@ -173,13 +150,13 @@ impl Object {
   }
 
   /// return the distance to another object
-  pub fn distance_to(&self, other: &Object) -> f32 {
-    let dx = other.x - self.x;
-    let dy = other.y - self.y;
+  pub fn distance_to(&self, player: &Player) -> f32 {
+    let dx = player.get_x() - self.x;
+    let dy = player.get_y() - self.y;
     ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
   }
 
-  pub fn ai_take_turn(&mut self, tcod: &Tcod, game: &Game, other_objects: &[Object], player: &mut Object) {
+  pub fn ai_take_turn(&mut self, tcod: &Tcod, game: &mut Game, other_objects: &[Object], player: &mut Player) {
     // a basic monster takes its turn. If you can see it, it can see you
     let (monster_x, monster_y) = self.pos();
     if tcod.fov.is_in_fov(monster_x, monster_y) {
@@ -187,8 +164,8 @@ impl Object {
             // move towards player if far away
             let (player_x, player_y) = player.pos();
             self.move_towards(player_x, player_y, &game, other_objects);
-        } else if player.fighter.map_or(false, |f| f.hp > 0) {
-            self.attack(player);
+        } else if player.get_fighter().map_or(false, |f| f.hp > 0) {
+            self.attack(player, game);
             
         }
     }
@@ -242,6 +219,10 @@ impl Object {
 
   pub fn get_ai(&self) -> Option<&Ai> {
     self.ai.as_ref()
+  }
+
+  pub fn get_fighter(&self) -> Option<&Fighter> {
+    self.fighter.as_ref()
   }
 
   pub fn get_name(&self) -> String {
