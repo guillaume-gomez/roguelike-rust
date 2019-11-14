@@ -1,8 +1,9 @@
+use crate::enemy::Enemy;
 use tcod::Console;
 use crate::fighter::Fighter;
 use crate::game::Game;
 use crate::object::Object;
-use crate::death_callback::DeathCallback;
+
 
 #[derive(Debug, Clone)]
 pub struct Player {
@@ -23,10 +24,8 @@ impl Player {
         max_hp: 30,
         hp: 30,
         defense: 2,
-        power: 5,
-        on_death: DeathCallback::Player
-      }),
-      ai: None
+        power: 5
+      })
     };
     Player {
       object
@@ -37,38 +36,44 @@ impl Player {
     self.object.draw(con)
   }
 
-  pub fn attack(&mut self, target: &mut Object, game: &mut Game) {
+  pub fn attack(&mut self, target: &mut Enemy, game: &mut Game) {
     // a simple formula for attack damage
-    let damage = self.get_fighter().map_or(0, |f| f.power) - target.fighter.map_or(0, |f| f.defense);
+    let damage = self.get_fighter().map_or(0, |f| f.power) - target.get_fighter().map_or(0, |f| f.defense);
     if damage > 0 {
       // make the target take some damage
       game.messages.add(
-        format!("{} attacks {} for {} hit points.", self.object.name, target.name, damage),
+        format!("{} attacks {} for {} hit points.", self.object.name, target.get_name(), damage),
         tcod::colors::WHITE
       );
       target.take_damage(damage, game);
     } else {
       game.messages.add(
-        format!("{} attacks {} but it has no effect!", self.object.name, target.name),
+        format!("{} attacks {} but it has no effect!", self.object.name, target.get_name()),
         tcod::colors::WHITE
       );
     }
   }
 
-  pub fn move_or_attack(&mut self, dx: i32, dy: i32, game: &mut Game, other_objects: &mut [Object]) {
+  pub fn move_or_attack(&mut self, dx: i32, dy: i32, game: &mut Game, enemies: &mut [Enemy]) {
     let x = self.object.x + dx;
     let y = self.object.y + dy;
     
-    let target_id = other_objects
+    let target_id = enemies
       .iter()
-      .position(|object| object.fighter.is_some() && object.pos() == (x, y));
+      .position(|object| object.get_fighter().is_some() && object.pos() == (x, y));
     // attack if target found, move otherwise
     match target_id {
       Some(target_id) => {
-        self.attack(&mut other_objects[target_id], game);
+        self.attack(&mut enemies[target_id], game);
       }
       None => {
-        self.object.move_by(dx, dy, &game, other_objects);
+        //clone => dirty 
+        let object_enemies = enemies
+          .iter()
+          .map(|obj| obj.get_object().clone())
+          .collect::<Vec<Object>>();
+        
+        self.object.move_by(dx, dy, &game, &object_enemies);
       }
     }
   }
@@ -82,8 +87,10 @@ impl Player {
     // check for death, call the death function
     if let Some(fighter) = self.object.fighter {
       if fighter.hp <= 0 {
-        self.die();
-        fighter.on_death.callback(&mut self.object, game);
+        game.messages.add("You died!", tcod::colors::RED);
+        self.object.die();
+        self.object.char = '%';
+        self.object.color = tcod::colors::DARK_RED;
       }
     }
   }
@@ -111,10 +118,6 @@ impl Player {
 
   pub fn is_alive(&self) -> bool {
     self.object.alive
-  }
-
-  pub fn die(&mut self) {
-    self.object.alive = false;
   }
 
   pub fn get_name(&self) -> String {

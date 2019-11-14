@@ -1,13 +1,15 @@
+use crate::enemy::Enemy;
+use crate::object::is_blocked;
+use crate::object::Object;
 use crate::player::Player;
 use std::cmp;
 use rand::Rng;
 
 use crate::constants::*;
 use crate::messages::Messages;
-use crate::object::is_blocked;
 use crate::tile::Tile;
 use crate::rect::Rect;
-use crate::object::Object;
+
 
 //#[derive(Clone, Copy)]
 pub type Map = Vec<Vec<Tile>>;
@@ -20,16 +22,16 @@ pub struct Game {
 }
 
 impl Game {
-  pub fn new(player: &mut Player, other_objects: &mut Vec<Object> ) -> Self {
+  pub fn new(player: &mut Player, enemies: &mut Vec<Enemy> ) -> Self {
     Game { 
-      map: make_map(player, other_objects),
+      map: make_map(player, enemies),
       messages: Messages::new(),
       inventory: vec![],
     }
   }
 }
 
-fn make_map(player: &mut Player, other_objects: &mut Vec<Object>) -> Map {
+fn make_map(player: &mut Player, enemies: &mut Vec<Enemy>) -> Map {
   let mut rooms = vec![];
   let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
 
@@ -54,7 +56,7 @@ fn make_map(player: &mut Player, other_objects: &mut Vec<Object>) -> Map {
       // "paint" it to the map's tiles
       create_room(new_room, &mut map);
 
-      place_objects(new_room, other_objects, &mut map);
+      place_objects(new_room, enemies, &mut map);
 
       // center coordinates of the new room, will be useful later
       let (new_x, new_y) = new_room.center();
@@ -106,42 +108,48 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
     }
 }
 
-fn place_objects(room: Rect, objects: &mut Vec<Object>, map: &Map) {
+fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, map: &Map) {
   // choose random number of monsters
   let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
+  
+  //clone => dirty 
+  let object_enemies = enemies
+    .iter()
+    .map(|obj| obj.get_object().clone())
+    .collect::<Vec<Object>>();
 
   for _ in 0..num_monsters {
     // choose random spot for this monster
     let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
     let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
 
-    if !is_blocked(x, y, map, objects) {
-      let mut monster = if rand::random::<f32>() < 0.8 {
+
+    if !is_blocked(x, y, map, &object_enemies) {
+      let monster = if rand::random::<f32>() < 0.8 {
           // 80% chance of getting an orc
           // create an orc
-          Object::create_orc(x, y)
+          Enemy::create_orc(x, y)
         } else {
           // create a troll
-          Object::create_troll(x, y)
+          Enemy::create_troll(x, y)
         };
-      monster.alive();
-      objects.push(monster);
+      enemies.push(monster);
     }
   }
 
-  // choose random number of items
-  let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+  // // choose random number of items
+  // let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
 
-  for _ in 0..num_items {
-    // choose random spot for this item
-    let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
-    let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
+  // for _ in 0..num_items {
+  //   // choose random spot for this item
+  //   let x = rand::thread_rng().gen_range(room.x1() + 1, room.x2());
+  //   let y = rand::thread_rng().gen_range(room.y1() + 1, room.y2());
 
-    // only place it if the tile is not blocked
-    if !is_blocked(x, y, map, objects) {
-      // create a healing potion
-      let object = Object::create_potion(x, y);
-      objects.push(object);
-    }
-  }
+  //   // only place it if the tile is not blocked
+  //   if !is_blocked(x, y, map, &object_enemies) {
+  //     // create a healing potion
+  //     let object = Object::create_potion(x, y);
+  //     enemies.push(object);
+  //   }
+  // }
 }

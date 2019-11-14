@@ -8,12 +8,12 @@ mod constants;
 mod game;
 mod rect;
 mod tile;
-mod player;
 mod object;
+mod player;
+mod enemy;
 mod fighter;
-mod death_callback;
 mod messages;
-use object::Object;
+use enemy::Enemy;
 use player::Player;
 use game::Game;
 
@@ -33,10 +33,10 @@ pub struct Tcod {
   mouse: Mouse,
 }
 
-fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> String {
+fn get_names_under_mouse(mouse: Mouse, enemys: &[Enemy], fov_map: &FovMap) -> String {
   let (x, y) = (mouse.cx as i32, mouse.cy as i32);
 
-  let names = objects
+  let names = enemys
     .iter()
     .filter(|obj| obj.pos() == (x, y) && fov_map.is_in_fov(obj.get_x(), obj.get_y()))
     .map(|obj| obj.get_name())
@@ -44,7 +44,7 @@ fn get_names_under_mouse(mouse: Mouse, objects: &[Object], fov_map: &FovMap) -> 
   names.join(", ")
 }
 
-fn handle_keys(tcod: &mut Tcod, game: &mut Game, player: &mut Player, other_objects: &mut[Object]) -> PlayerAction {
+fn handle_keys(tcod: &mut Tcod, game: &mut Game, player: &mut Player, enemys: &mut[Enemy]) -> PlayerAction {
   use tcod::input::KeyCode::*;
   use PlayerAction::*;
 
@@ -67,19 +67,19 @@ fn handle_keys(tcod: &mut Tcod, game: &mut Game, player: &mut Player, other_obje
 
     // movement keys
     (Key { code: Up, .. }, _, true) => {
-      player.move_or_attack(0, -1, game, other_objects);
+      player.move_or_attack(0, -1, game, enemys);
       TookTurn
     }
     (Key { code: Down, .. }, _, true) => {
-      player.move_or_attack(0, 1, game, other_objects);
+      player.move_or_attack(0, 1, game, enemys);
       TookTurn
     }
     (Key { code: Left, .. }, _, true) => {
-      player.move_or_attack(-1, 0, game, other_objects);
+      player.move_or_attack(-1, 0, game, enemys);
       TookTurn
     }
     (Key { code: Right, .. }, _, true) => {
-      player.move_or_attack(1, 0, game, other_objects);
+      player.move_or_attack(1, 0, game, enemys);
       TookTurn
     }
 
@@ -87,18 +87,18 @@ fn handle_keys(tcod: &mut Tcod, game: &mut Game, player: &mut Player, other_obje
   }
 }
 
-fn render_game(tcod: &mut Tcod, game: &Game, player: &Player, objects: &[Object], fov_recompute: bool) {
+fn render_game(tcod: &mut Tcod, game: &Game, player: &Player, enemys: &[Enemy], fov_recompute: bool) {
   // prepare to render the GUI panel
   if fov_recompute {
     // recompute FOV if needed (the player moved or something)
     tcod.fov.compute_fov(player.get_x(), player.get_y(), TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
   }
 
-  // draw all objects in the list
+  // draw all Enemys in the list
   // TODO UNCOMMENT FOV NEXT TIME
-  for object in objects {
-    //if tcod.fov.is_in_fov(object.get_x(), object.get_y()) {
-      object.draw(&mut tcod.con);
+  for enemy in enemys {
+    //if tcod.fov.is_in_fov(Enemy.get_x(), Enemy.get_y()) {
+      enemy.draw(&mut tcod.con);
     //}
   }
   //render player
@@ -164,7 +164,7 @@ fn render_bar(
   );
 }
 
-fn render_gui(tcod: &mut Tcod, game: &Game, player: &Player, other_objects: &[Object] ) {
+fn render_gui(tcod: &mut Tcod, game: &Game, player: &Player, enemys: &[Enemy] ) {
   tcod.panel.set_default_background(tcod::colors::BLACK);
   tcod.panel.clear();
 
@@ -184,7 +184,7 @@ fn render_gui(tcod: &mut Tcod, game: &Game, player: &Player, other_objects: &[Ob
   );
 
   render_messages(tcod, game);
-  render_raycast(tcod, other_objects);
+  render_raycast(tcod, enemys);
 
   // blit the contents of `panel` to the root console
   blit(
@@ -212,14 +212,14 @@ fn render_messages(tcod: &mut Tcod, game: &Game) {
   }
 }
 
-fn render_raycast(tcod: &mut Tcod, objects: &[Object]) {
+fn render_raycast(tcod: &mut Tcod, enemys: &[Enemy]) {
   tcod.panel.set_default_foreground(tcod::colors::LIGHT_GREY);
   tcod.panel.print_ex(
     1,
     0,
     BackgroundFlag::None,
     TextAlignment::Left,
-    get_names_under_mouse(tcod.mouse, objects, &tcod.fov),
+    get_names_under_mouse(tcod.mouse, enemys, &tcod.fov),
   );
 }
 
@@ -244,8 +244,8 @@ fn main() {
 
   let mut previous_player_position = (-1, -1);
   let mut player = Player::new(0, 0);
-  let mut other_objects = vec![];
-  let mut game = Game::new(&mut player, &mut other_objects);
+  let mut enemys = vec![];
+  let mut game = Game::new(&mut player, &mut enemys);
 
   // a warm welcoming message!
   game.messages.add(
@@ -265,27 +265,27 @@ fn main() {
     
 
     let fov_recompute = previous_player_position != (player.pos());
-    render_game(&mut tcod, &game, &player, &other_objects, fov_recompute);
-    render_gui(&mut tcod, &game, &player, &other_objects);
+    render_game(&mut tcod, &game, &player, &enemys, fov_recompute);
+    render_gui(&mut tcod, &game, &player, &enemys);
     tcod.root.flush();
 
     previous_player_position = player.pos();
-    let player_action = handle_keys(&mut tcod, &mut game, &mut player, &mut other_objects);
+    let player_action = handle_keys(&mut tcod, &mut game, &mut player, &mut enemys);
     if player_action == PlayerAction::Exit {
       break;
     }
 
     // let monsters take their turn
     if player.is_alive() && player_action != PlayerAction::DidntTakeTurn {
-      for id in 0..other_objects.len() {
-        if other_objects[id].get_ai().is_some() {
-            let mut other_objects_without_enemy = other_objects.clone();
-            other_objects_without_enemy.clone_from_slice(&other_objects);
-            let mut enemy = other_objects_without_enemy.remove(id);
-            enemy.ai_take_turn(&tcod, &mut game, &other_objects_without_enemy, &mut player);
+      for id in 0..enemys.len() {
+        if enemys[id].get_ai().is_some() {
+            let mut enemys_without_enemy = enemys.clone();
+            enemys_without_enemy.clone_from_slice(&enemys);
+            let mut enemy = enemys_without_enemy.remove(id);
+            enemy.ai_take_turn(&tcod, &mut game, &enemys_without_enemy, &mut player);
             
-            // update the original other object array
-            other_objects[id] = enemy;
+            // update the original other Enemy array
+            enemys[id] = enemy;
         }
       }
     }
