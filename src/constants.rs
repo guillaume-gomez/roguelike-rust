@@ -36,6 +36,8 @@ pub const MAX_ROOMS: i32 = 30;
 pub const MAX_ROOM_MONSTERS: i32 = 3;
 pub const MAX_ROOM_ITEMS: i32 = 2;
 
+pub const MAX_INVENTORY: usize = 26;
+
 
 // messages
 pub const MSG_X: i32 = BAR_WIDTH + 2;
