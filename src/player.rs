@@ -1,3 +1,4 @@
+use crate::constants::MAX_INVENTORY;
 use crate::enemy::Enemy;
 use tcod::Console;
 use crate::fighter::Fighter;
@@ -25,7 +26,8 @@ impl Player {
         hp: 30,
         defense: 2,
         power: 5
-      })
+      }),
+      item: None,
     };
     Player {
       object
@@ -92,6 +94,22 @@ impl Player {
         self.object.char = '%';
         self.object.color = tcod::colors::DARK_RED;
       }
+    }
+  }
+
+  pub fn pick_item_up(&mut self, object_id: usize, game: &mut Game, collectibles: &mut Vec<Object>) {
+    if game.inventory.len() >= MAX_INVENTORY {
+      game.messages.add(
+        format!(
+          "Your inventory is full, cannot pick up {}.",
+          collectibles[object_id].name
+        ),
+        tcod::colors::RED,
+      );
+    } else {
+      let item = collectibles.swap_remove(object_id);
+      game.messages.add(format!("You picked up a {}!", item.name), tcod::colors::GREEN);
+      game.inventory.push(item);
     }
   }
 

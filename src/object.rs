@@ -1,10 +1,14 @@
 use crate::fighter::Fighter;
-
 use crate::game::Game;
 use crate::game::Map;
 use tcod::colors::Color;
 use tcod::console::Console;
 use tcod::console::BackgroundFlag;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Item {
+    Heal,
+}
 
 #[derive(Debug, Clone)]
 pub struct Object {
@@ -15,7 +19,8 @@ pub struct Object {
   pub name: String,
   pub blocks: bool,
   pub alive: bool,
-  pub fighter: Option<Fighter> 
+  pub fighter: Option<Fighter>,
+  pub item: Option<Item>,
 }
 
 impl Object {
@@ -28,7 +33,8 @@ impl Object {
       name: name.to_string(),
       blocks,
       alive: false,
-      fighter: None
+      fighter: None,
+      item: None,
     }
   }
 
@@ -42,6 +48,7 @@ impl Object {
       blocks: false,
       alive: false,
       fighter: None,
+      item: Some(Item::Heal),
     }
   }
 

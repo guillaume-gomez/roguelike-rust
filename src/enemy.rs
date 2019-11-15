@@ -35,6 +35,7 @@ impl Enemy {
         defense,
         power
       }),
+      item: None,
     };
     Enemy {
       object,
