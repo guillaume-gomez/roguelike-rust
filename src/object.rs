@@ -10,6 +10,11 @@ pub enum Item {
     Heal,
 }
 
+enum UseResult {
+    UsedUp,
+    Cancelled,
+}
+
 #[derive(Debug, Clone)]
 pub struct Object {
   pub x: i32,
