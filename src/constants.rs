@@ -5,6 +5,7 @@ use tcod::map::{FovAlgorithm};
 pub const BAR_WIDTH: i32 = 20;
 pub const PANEL_HEIGHT: i32 = 7;
 pub const PANEL_Y: i32 = SCREEN_HEIGHT - PANEL_HEIGHT;
+pub const INVENTORY_WIDTH: i32 = 50;
 
 pub const LIMIT_FPS: i32 = 20; // 20 frames-per-second maximum
 
@@ -43,4 +44,8 @@ pub const MAX_INVENTORY: usize = 26;
 pub const MSG_X: i32 = BAR_WIDTH + 2;
 pub const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
+
+pub const HEAL_AMOUNT: i32 = 4;
+pub const LIGHTNING_DAMAGE: i32 = 40;
+pub const LIGHTNING_RANGE: i32 = 5;
 
