@@ -48,4 +48,6 @@ pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 pub const HEAL_AMOUNT: i32 = 4;
 pub const LIGHTNING_DAMAGE: i32 = 40;
 pub const LIGHTNING_RANGE: i32 = 5;
+pub const CONFUSE_RANGE: i32 = 8;
+pub const CONFUSE_NUM_TURNS: i32 = 10;
 
