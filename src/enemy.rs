@@ -1,15 +1,22 @@
-use crate::Tcod;
+extern crate rand;
 use crate::game::Game;
 use crate::player::Player;
 use crate::fighter::Fighter;
 use crate::object::Object;
 
+use crate::Tcod;
 use tcod::colors::Color;
 use tcod::Console;
 
+use rand::Rng;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Ai {
-    Basic,
+  Basic,
+  Confused {
+    previous_ai: Box<Ai>,
+    num_turns: i32,
+  },
 }
 
 #[derive(Debug, Clone)]
@@ -111,27 +118,57 @@ impl Enemy {
     self.object.move_by(dx, dy, &game, &object_enemies);
   }
 
-  /// return the distance to another object
-  pub fn distance_to(&self, player: &Player) -> f32 {
-    let dx = player.get_x() - self.object.x;
-    let dy = player.get_y() - self.object.y;
-    ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
-  }
-
-  pub fn ai_take_turn(&mut self, tcod: &Tcod, game: &mut Game, other_enemies: &[Enemy], player: &mut Player) {
+  pub fn ai_basic(&mut self, tcod: &Tcod, game: &mut Game, other_enemies: &[Enemy], player: &mut Player) -> Ai {
     // a basic monster takes its turn. If you can see it, it can see you
     let (monster_x, monster_y) = self.object.pos();
     if tcod.fov.is_in_fov(monster_x, monster_y) {
-        if self.distance_to(&player) >= 2.0 {
-            // move towards player if far away
-            let (player_x, player_y) = player.pos();
-            self.move_towards(player_x, player_y, &game, other_enemies);
-        } else if player.get_fighter().map_or(false, |f| f.hp > 0) {
-            self.attack(player, game);
-        }
+      if self.object.distance_to(&player.get_object()) >= 2.0 {
+        // move towards player if far away
+        let (player_x, player_y) = player.pos();
+        self.move_towards(player_x, player_y, &game, other_enemies);
+      } else if player.get_fighter().map_or(false, |f| f.hp > 0) {
+        self.attack(player, game);
+      }
+    }
+    Ai::Basic
+  }
+
+  pub fn ai_take_turn(&mut self, tcod: &Tcod, game: &mut Game, other_enemies: &[Enemy], player: &mut Player) {
+    use Ai::*;
+    if let Some(ai) = self.ai.take() {
+      let new_ai = match ai {
+        Basic => self.ai_basic(tcod, game, other_enemies, player),
+        Confused {
+            previous_ai,
+            num_turns,
+        } => self.ai_confused(tcod, game, other_enemies, previous_ai, num_turns),
+      };
+      self.ai = Some(new_ai);
     }
   }
 
+  fn ai_confused(&mut self, _tcod: &Tcod, game: &mut Game, enemies: &[Enemy], previous_ai: Box<Ai>, num_turns: i32) -> Ai {
+      let object_enemies = enemies
+        .iter()
+        .map(|obj| obj.get_object().clone())
+        .collect::<Vec<Object>>();
+      if num_turns >= 0 {
+          // still confused ...
+          // move in a random direction, and decrease the number of turns confused
+          self.object.move_by(rand::thread_rng().gen_range(-1, 2), rand::thread_rng().gen_range(-1, 2), &game, &object_enemies);
+          Ai::Confused {
+              previous_ai: previous_ai,
+              num_turns: num_turns - 1,
+          }
+      } else {
+          // restore the previous AI (this one will be deleted)
+          game.messages.add(
+              format!("The {} is no longer confused!", self.get_name()),
+              tcod::colors::RED,
+          );
+          *previous_ai
+      }
+  }
 
   pub fn draw(&self,  con: &mut dyn Console) {
     self.object.draw(con)
