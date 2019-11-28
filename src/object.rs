@@ -8,11 +8,9 @@ use tcod::console::BackgroundFlag;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Item {
     Heal,
-}
-
-enum UseResult {
-    UsedUp,
-    Cancelled,
+    Lightning,
+    Confuse,
+    Fireball
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +55,48 @@ impl Object {
     }
   }
 
+  pub fn create_lighting_bolt(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '#',
+      name: "scroll of lightning bolt".to_string(),
+      color: tcod::colors::LIGHT_YELLOW,
+      blocks: false,
+      alive: false,
+      fighter: None,
+      item: Some(Item::Lightning),
+    }
+  }
+
+  pub fn create_confuse_potion(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '#',
+      name: "scroll of confusion".to_string(),
+      color: tcod::colors::LIGHT_YELLOW,
+      blocks: false,
+      alive: false,
+      fighter: None,
+      item: Some(Item::Confuse),
+    }
+  }
+
+  pub fn create_fireball(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '#',
+      name: "scroll of fireball".to_string(),
+      color:  tcod::colors::LIGHT_YELLOW,
+      blocks: false,
+      alive: false,
+      fighter: None,
+      item: Some(Item::Fireball)
+    }
+  }
+
   pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
     let (x, y) = self.pos();
     if !is_blocked(x + dx, y + dy, &game.map, other_objects) {
@@ -67,6 +107,17 @@ impl Object {
   pub fn draw(&self, con: &mut dyn Console) {
     con.set_default_foreground(self.color);
     con.put_char(self.x, self.y, self.char, BackgroundFlag::None);
+  }
+
+  /// return the distance to another object
+  pub fn distance_to(&self, object: &Object) -> f32 {
+    let dx = object.x - self.x;
+    let dy = object.y - self.y;
+    ((dx.pow(2) + dy.pow(2)) as f32).sqrt()
+  }
+
+  pub fn distance(&self, x: i32, y: i32) -> f32 {
+    (((x - self.x).pow(2) + (y - self.y).pow(2)) as f32).sqrt()
   }
 
   pub fn set_pos(&mut self, x: i32, y: i32) {

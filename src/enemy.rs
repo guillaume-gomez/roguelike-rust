@@ -221,9 +221,16 @@ impl Enemy {
     &self.object
   }
 
-  pub fn get_ai(&self) -> Option<&Ai> {
-    self.ai.as_ref()
+  pub fn get_ai(&self) -> Option<Ai> {
+    self.ai.clone()
   }
 
+  pub fn set_ai(&mut self, new_ai: Option<Ai>) {
+    self.ai = new_ai;
+  }
+
+  pub fn distance(&self, x: i32, y: i32) -> f32 {
+    self.object.distance(x, y)
+  }
 
 }
