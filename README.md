@@ -1,3 +1,3 @@
 # roguelike-rust
 
-https://tomassedovic.github.io/roguelike-tutorial/index.html
+code inspired of https://tomassedovic.github.io/roguelike-tutorial/index.html
