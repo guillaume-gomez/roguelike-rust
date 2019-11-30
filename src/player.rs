@@ -295,7 +295,7 @@ impl Player {
     }
   }
 
-  fn drop_item(&self, inventory_id: usize, game: &mut Game, collectibles: &mut Vec<Object>) {
+  pub fn drop_item(&self, inventory_id: usize, game: &mut Game, collectibles: &mut Vec<Object>) {
     let mut item = game.inventory.remove(inventory_id);
     item.set_pos(self.get_x(), self.get_y());
     game.messages.add(format!("You dropped a {}.", item.name), tcod::colors::YELLOW);
