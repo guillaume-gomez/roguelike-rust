@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use crate::target_tile;
 use crate::Tcod;
 use tcod::Console;
@@ -23,7 +24,7 @@ enum UseResult {
     Cancelled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
   object: Object
 }

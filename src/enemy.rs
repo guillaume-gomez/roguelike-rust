@@ -9,8 +9,9 @@ use tcod::colors::Color;
 use tcod::Console;
 
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Ai {
   Basic,
   Confused {
@@ -19,7 +20,7 @@ pub enum Ai {
   },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Enemy {
   object: Object,
   ai: Option<Ai>,

@@ -4,8 +4,9 @@ use crate::game::Map;
 use tcod::colors::Color;
 use tcod::console::Console;
 use tcod::console::BackgroundFlag;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Item {
     Heal,
     Lightning,
@@ -13,7 +14,7 @@ pub enum Item {
     Fireball
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Object {
   pub x: i32,
   pub y: i32,
