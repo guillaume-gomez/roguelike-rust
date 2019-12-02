@@ -27,7 +27,7 @@ pub const SCREEN_HEIGHT: i32 = 50;
 // Fov algorithm
 pub const FOV_ALGO: FovAlgorithm = FovAlgorithm::Basic; // default FOV algorithm
 pub const FOV_LIGHT_WALLS: bool = true; // light walls or not
-pub const TORCH_RADIUS: i32 = 10;
+pub const TORCH_RADIUS: i32 = 2;
 
 
 // room constants
