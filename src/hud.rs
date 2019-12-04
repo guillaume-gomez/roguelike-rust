@@ -135,14 +135,19 @@ pub fn inventory_menu(inventory: &[Object], header: &str, root: &mut Root) -> Op
 }
 
 
-fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
+pub fn menu<T: AsRef<str>>(header: &str, options: &[T], width: i32, root: &mut Root) -> Option<usize> {
   assert!(
     options.len() <= MAX_INVENTORY,
     format!("Cannot have a menu with more than {} options.", MAX_INVENTORY)
   );
 
-  // calculate total height for the header (after auto-wrap) and one line per option
-  let header_height = root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header);
+  
+ // calculate total height for the header (after auto-wrap) and one line per option
+  let header_height = if header.is_empty() {
+      0
+  } else {
+      root.get_height_rect(0, 0, width, SCREEN_HEIGHT, header)
+  };
   let height = options.len() as i32 + header_height;
 
   // create an off-screen console that represents the menu's window
