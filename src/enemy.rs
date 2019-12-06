@@ -44,6 +44,7 @@ impl Enemy {
         power
       }),
       item: None,
+      always_visible: false
     };
     Enemy {
       object,
