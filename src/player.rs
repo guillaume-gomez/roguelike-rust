@@ -46,6 +46,7 @@ impl Player {
         power: 5
       }),
       item: None,
+      always_visible: true
     };
     Player {
       object
@@ -305,7 +306,7 @@ impl Player {
 
  
   /// heal by the given amount, without going over the maximum
-  fn heal(&mut self, amount: i32) {
+  pub fn heal(&mut self, amount: i32) {
     if let Some(ref mut fighter) = self.object.fighter {
       fighter.hp += amount;
       if fighter.hp > fighter.max_hp {

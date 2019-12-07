@@ -25,6 +25,7 @@ pub struct Object {
   pub alive: bool,
   pub fighter: Option<Fighter>,
   pub item: Option<Item>,
+  pub always_visible: bool,
 }
 
 impl Object {
@@ -39,6 +40,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: None,
+      always_visible: false
     }
   }
 
@@ -53,6 +55,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Heal),
+      always_visible: false
     }
   }
 
@@ -67,6 +70,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Lightning),
+      always_visible: false
     }
   }
 
@@ -81,6 +85,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Confuse),
+      always_visible: false
     }
   }
 
@@ -94,7 +99,23 @@ impl Object {
       blocks: false,
       alive: false,
       fighter: None,
-      item: Some(Item::Fireball)
+      item: Some(Item::Fireball),
+      always_visible: false
+    }
+  }
+
+  pub fn create_stair(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '<',
+      name: "stairs".to_string(),
+      color:  tcod::colors::WHITE,
+      blocks: false,
+      alive: false,
+      fighter: None,
+      item: None,
+      always_visible: true
     }
   }
 
@@ -141,6 +162,10 @@ impl Object {
 
   pub fn get_name(&self) -> String {
     self.name.to_string()
+  }
+
+  pub fn always_visible(&self) -> bool {
+    self.always_visible
   }
 }
 
