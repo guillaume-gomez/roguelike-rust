@@ -28,7 +28,7 @@ pub struct Enemy {
 
 
 impl Enemy {
-  pub fn new(x: i32, y: i32, char: char, color: Color, name: &str, max_hp: i32, hp: i32, defense: i32, power: i32) -> Self {
+  pub fn new(x: i32, y: i32, char: char, color: Color, name: &str, max_hp: i32, hp: i32, defense: i32, power: i32, xp: i32) -> Self {
     let object = Object { 
       x, 
       y,
@@ -41,7 +41,8 @@ impl Enemy {
         max_hp,
         hp,
         defense,
-        power
+        power,
+        xp
       }),
       item: None,
       always_visible: false
@@ -63,7 +64,8 @@ impl Enemy {
       10,
       10,
       0,
-      3
+      3,
+      35
     )
   }
 
@@ -77,7 +79,8 @@ impl Enemy {
       16,
       16,
       1,
-      4
+      4,
+      100
     )
   }
 
@@ -177,7 +180,7 @@ impl Enemy {
   }
 
   // for player and enemy only
-  pub fn take_damage(&mut self, damage: i32, game: &mut Game) {
+  pub fn take_damage(&mut self, damage: i32, game: &mut Game) -> Option<i32> {
     if let Some(fighter) = self.object.fighter.as_mut() {
       if damage > 0 {
           fighter.hp -= damage;
@@ -192,11 +195,23 @@ impl Enemy {
         self.object.blocks = false;
         self.object.fighter = None;
         self.ai = None;
+
+        game.messages.add(
+          format!(
+            "{} is dead! You gain {} experience points.",
+            self.object.name,
+            self.get_fighter().unwrap().xp
+          ),
+          tcod::colors::ORANGE,
+        );
         
         game.messages.add(format!("{} is dead!", self.object.get_name()), tcod::colors::ORANGE);
         self.object.name = format!("remains of {}", self.object.get_name());
+        
+        return Some(fighter.xp);
       }
     }
+    None
   }
 
   pub fn pos(&self) -> (i32, i32) {

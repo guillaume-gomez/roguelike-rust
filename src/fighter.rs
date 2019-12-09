@@ -6,6 +6,7 @@ pub struct Fighter {
   pub hp: i32,
   pub defense: i32,
   pub power: i32,
+  pub xp: i32,
 }
 
 impl Fighter {

@@ -1,8 +1,12 @@
+use crate::hud::menu;
 use serde::{Deserialize, Serialize};
 use crate::target_tile;
 use crate::Tcod;
 use tcod::Console;
 
+use crate::constants::LEVEL_SCREEN_WIDTH;
+use crate::constants::LEVEL_UP_FACTOR;
+use crate::constants::LEVEL_UP_BASE;
 use crate::constants::FIREBALL_RADIUS;
 use crate::constants::FIREBALL_DAMAGE;
 use crate::constants::CONFUSE_RANGE;
@@ -26,7 +30,8 @@ enum UseResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
-  object: Object
+  object: Object,
+  level: i32
 }
 
 impl Player {
@@ -43,13 +48,15 @@ impl Player {
         max_hp: 30,
         hp: 30,
         defense: 2,
+        xp: 0,
         power: 5
       }),
       item: None,
       always_visible: true
     };
     Player {
-      object
+      object,
+      level: 1
     }
   }
 
@@ -66,7 +73,10 @@ impl Player {
         format!("{} attacks {} for {} hit points.", self.object.name, target.get_name(), damage),
         tcod::colors::WHITE
       );
-      target.take_damage(damage, game);
+      if let Some(xp) = target.take_damage(damage, game) {
+        // yield experience to the player
+        self.object.fighter.as_mut().unwrap().xp += xp;
+      }
     } else {
       game.messages.add(
         format!("{} attacks {} but it has no effect!", self.object.name, target.get_name()),
@@ -186,7 +196,9 @@ impl Player {
             ),
             tcod::colors::LIGHT_BLUE,
         );
-        enemies[monster_id].take_damage(LIGHTNING_DAMAGE, game);
+        if let Some(xp) = enemies[monster_id].take_damage(LIGHTNING_DAMAGE, game) {
+          self.object.fighter.as_mut().unwrap().xp += xp;
+        }
         UseResult::UsedUp
     } else {
         // no enemy found within maximum range
@@ -246,6 +258,7 @@ impl Player {
       tcod::colors::ORANGE,
     );
 
+    let mut xp_to_gain = 0;
     for enemy in enemies {
       if enemy.distance(x, y) <= FIREBALL_RADIUS as f32 && enemy.get_fighter().is_some() {
         game.messages.add(
@@ -255,10 +268,12 @@ impl Player {
           ),
           tcod::colors::ORANGE,
         );
-        enemy.take_damage(FIREBALL_DAMAGE, game);
+        if let Some(xp) = enemy.take_damage(FIREBALL_DAMAGE, game) {
+          xp_to_gain += xp;
+        }
       }
     }
-
+    self.object.fighter.as_mut().unwrap().xp += xp_to_gain;
     UseResult::UsedUp
 }
 
@@ -303,7 +318,6 @@ impl Player {
     game.messages.add(format!("You dropped a {}.", item.name), tcod::colors::YELLOW);
     collectibles.push(item);
   }
-
  
   /// heal by the given amount, without going over the maximum
   pub fn heal(&mut self, amount: i32) {
@@ -311,6 +325,51 @@ impl Player {
       fighter.hp += amount;
       if fighter.hp > fighter.max_hp {
         fighter.hp = fighter.max_hp;
+      }
+    }
+  }
+
+  pub fn level_up(&mut self, tcod: &mut Tcod, game: &mut Game) {
+    let level_up_xp = LEVEL_UP_BASE + self.level * LEVEL_UP_FACTOR;
+  // see if the player's experience is enough to level-up
+  if self.object.fighter.as_ref().map_or(0, |f| f.xp) >= level_up_xp {
+      // it is! level up
+      self.level += 1;
+      game.messages.add(
+        format!(
+          "Your battle skills grow stronger! You reached level {}!",
+          self.level
+        ),
+        tcod::colors::YELLOW,
+      );
+      let fighter = self.object.fighter.as_mut().unwrap();
+      let mut choice = None;
+      while choice.is_none() {
+        // keep asking until a choice is made
+        choice = menu(
+          "Level up! Choose a stat to raise:\n",
+          &[
+              format!("Constitution (+20 HP, from {})", fighter.max_hp),
+              format!("Strength (+1 attack, from {})", fighter.power),
+              format!("Agility (+1 defense, from {})", fighter.defense),
+          ],
+          LEVEL_SCREEN_WIDTH,
+          &mut tcod.root,
+        );
+      }
+      fighter.xp -= level_up_xp;
+      match choice.unwrap() {
+        0 => {
+          fighter.max_hp += 20;
+          fighter.hp += 20;
+        }
+        1 => {
+          fighter.power += 1;
+        }
+        2 => {
+          fighter.defense += 1;
+        }
+        _ => unreachable!(),
       }
     }
   }
@@ -350,5 +409,13 @@ impl Player {
 
   pub fn distance(&self, x: i32, y: i32) -> f32 {
     self.object.distance(x, y)
+  }
+
+  pub fn get_level(&self) -> i32 {
+    self.level
+  }
+
+  pub fn level_up_xp(&self) -> i32 {
+    LEVEL_UP_BASE + self.level * LEVEL_UP_FACTOR
   }
 }
