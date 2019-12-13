@@ -75,6 +75,14 @@ pub fn render_gui(tcod: &mut Tcod, game: &Game, player: &Player, enemys: &[Enemy
     tcod::colors::DARKER_RED,
   );
 
+  tcod.panel.print_ex(
+    1,
+    3,
+    BackgroundFlag::None,
+    TextAlignment::Left,
+    format!("Dungeon level: {}", game.dungeon_level),
+  );
+
   render_messages(tcod, game);
   render_raycast(tcod, enemys);
 
