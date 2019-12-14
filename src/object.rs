@@ -55,7 +55,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Heal),
-      always_visible: false
+      always_visible: true
     }
   }
 
@@ -70,7 +70,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Lightning),
-      always_visible: false
+      always_visible: true
     }
   }
 
@@ -85,7 +85,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Confuse),
-      always_visible: false
+      always_visible: true
     }
   }
 
@@ -100,7 +100,7 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Fireball),
-      always_visible: false
+      always_visible: true
     }
   }
 
