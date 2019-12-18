@@ -34,8 +34,6 @@ pub const TORCH_RADIUS: i32 = 2;
 pub const ROOM_MAX_SIZE: i32 = 10;
 pub const ROOM_MIN_SIZE: i32 = 6;
 pub const MAX_ROOMS: i32 = 30;
-pub const MAX_ROOM_MONSTERS: i32 = 3;
-pub const MAX_ROOM_ITEMS: i32 = 2;
 
 pub const MAX_INVENTORY: usize = 26;
 
@@ -45,13 +43,13 @@ pub const MSG_X: i32 = BAR_WIDTH + 2;
 pub const MSG_WIDTH: i32 = SCREEN_WIDTH - BAR_WIDTH - 2;
 pub const MSG_HEIGHT: usize = PANEL_HEIGHT as usize - 1;
 
-pub const HEAL_AMOUNT: i32 = 4;
+pub const HEAL_AMOUNT: i32 = 40;
 pub const LIGHTNING_DAMAGE: i32 = 40;
 pub const LIGHTNING_RANGE: i32 = 5;
 pub const CONFUSE_RANGE: i32 = 8;
 pub const CONFUSE_NUM_TURNS: i32 = 10;
 pub const FIREBALL_RADIUS: i32 = 3;
-pub const FIREBALL_DAMAGE: i32 = 12;
+pub const FIREBALL_DAMAGE: i32 = 25;
 
 
 // experience and level-ups
