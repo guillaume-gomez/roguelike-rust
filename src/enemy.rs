@@ -61,10 +61,10 @@ impl Enemy {
       'o',
       tcod::colors::DESATURATED_GREEN,
       &"orc".to_string(),
-      10,
-      10,
+      20,
+      20,
       0,
-      3,
+      4,
       35
     )
   }
@@ -76,10 +76,10 @@ impl Enemy {
       'T',
       tcod::colors::DARKER_GREEN,
       &"troll".to_string(),
-      16,
-      16,
-      1,
-      4,
+      30,
+      30,
+      2,
+      8,
       100
     )
   }
@@ -196,14 +196,15 @@ impl Enemy {
         self.object.fighter = None;
         self.ai = None;
 
-        game.messages.add(
-          format!(
-            "{} is dead! You gain {} experience points.",
-            self.object.name,
-            self.get_fighter().unwrap().xp
-          ),
-          tcod::colors::ORANGE,
-        );
+        // TODO debug why xp crashed
+        // game.messages.add(
+        //   format!(
+        //     "{} is dead! You gain {} experience points.",
+        //     self.object.name,
+        //     self.get_fighter().unwrap().xp
+        //   ),
+        //   tcod::colors::ORANGE,
+        // );
         
         game.messages.add(format!("{} is dead!", self.object.get_name()), tcod::colors::ORANGE);
         self.object.name = format!("remains of {}", self.object.get_name());
