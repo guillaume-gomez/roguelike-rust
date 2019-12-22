@@ -45,6 +45,7 @@ impl Enemy {
         xp
       }),
       item: None,
+      equipment: None,
       always_visible: false
     };
     Enemy {
@@ -189,6 +190,8 @@ impl Enemy {
     // check for death, call the death function
     if let Some(fighter) = self.object.fighter {
       if fighter.hp <= 0 {
+        let xp : i32 = self.object.fighter.unwrap().xp;
+
         self.object.die();
         self.object.char = '%';
         self.object.color = tcod::colors::DARK_RED;
@@ -196,15 +199,14 @@ impl Enemy {
         self.object.fighter = None;
         self.ai = None;
 
-        // TODO debug why xp crashed
-        // game.messages.add(
-        //   format!(
-        //     "{} is dead! You gain {} experience points.",
-        //     self.object.name,
-        //     self.get_fighter().unwrap().xp
-        //   ),
-        //   tcod::colors::ORANGE,
-        // );
+        game.messages.add(
+          format!(
+            "{} is dead! You gain {} experience points.",
+            self.object.name,
+            xp
+          ),
+          tcod::colors::ORANGE,
+        );
         
         game.messages.add(format!("{} is dead!", self.object.get_name()), tcod::colors::ORANGE);
         self.object.name = format!("remains of {}", self.object.get_name());

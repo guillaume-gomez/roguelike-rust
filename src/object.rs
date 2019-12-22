@@ -1,3 +1,6 @@
+use crate::messages::Messages;
+use crate::equipment::Equipment;
+use crate::equipment::Slot;
 use crate::fighter::Fighter;
 use crate::game::Game;
 use crate::game::Map;
@@ -11,7 +14,8 @@ pub enum Item {
     Heal,
     Lightning,
     Confuse,
-    Fireball
+    Fireball,
+    Equipment,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +30,7 @@ pub struct Object {
   pub fighter: Option<Fighter>,
   pub item: Option<Item>,
   pub always_visible: bool,
+  pub equipment: Option<Equipment>
 }
 
 impl Object {
@@ -40,7 +45,8 @@ impl Object {
       alive: false,
       fighter: None,
       item: None,
-      always_visible: false
+      always_visible: false,
+      equipment: None
     }
   }
 
@@ -55,7 +61,8 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Heal),
-      always_visible: true
+      always_visible: true,
+      equipment: None
     }
   }
 
@@ -70,7 +77,8 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Lightning),
-      always_visible: true
+      always_visible: true,
+      equipment: None,
     }
   }
 
@@ -85,7 +93,8 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Confuse),
-      always_visible: true
+      always_visible: true,
+      equipment: None,
     }
   }
 
@@ -100,7 +109,24 @@ impl Object {
       alive: false,
       fighter: None,
       item: Some(Item::Fireball),
-      always_visible: true
+      always_visible: true,
+      equipment: None
+    }
+  }
+
+  pub fn create_sword(x: i32, y: i32) -> Self {
+    Object {
+      x,
+      y,
+      char: '/',
+      name: "sword".to_string(),
+      color:  tcod::colors::SKY,
+      blocks: false,
+      alive: false,
+      fighter: None,
+      item: Some(Item::Equipment),
+      always_visible: true,
+      equipment: Some(Equipment { equipped: false, slot: Slot::RightHand })
     }
   }
 
@@ -115,7 +141,56 @@ impl Object {
       alive: false,
       fighter: None,
       item: None,
-      always_visible: true
+      always_visible: true,
+      equipment: None
+    }
+  }
+
+  pub fn equip(&mut self,  messages: &mut Messages) {
+    if self.item.is_none() {
+      messages.add(
+        format!("Can't equip {:?} because it's not an Item.", self),
+        tcod::colors::RED,
+      );
+      return;
+    };
+    if let Some(ref mut equipment) = self.equipment {
+      if !equipment.equipped {
+        equipment.equipped = true;
+        messages.add(
+          format!("Equipped by you on {}.", equipment.slot),
+          tcod::colors::LIGHT_GREEN,
+        );
+      }
+    } else {
+      messages.add(
+        format!("Can't equip {:?} because it's not an Equipment.", self),
+        tcod::colors::RED,
+      );
+    }
+  }
+
+  pub fn dequip(&mut self, messages: &mut Messages) {
+    if self.item.is_none() {
+      messages.add(
+        format!("Can't dequip {:?} because it's not an Item.", self),
+        tcod::colors::RED,
+      );
+      return;
+    };
+    if let Some(ref mut equipment) = self.equipment {
+      if equipment.equipped {
+          equipment.equipped = false;
+          messages.add(
+            format!("Dequipped by you from {}.", equipment.slot),
+            tcod::colors::LIGHT_YELLOW,
+          );
+      }
+    } else {
+        messages.add(
+          format!("Can't dequip {:?} because it's not an Equipment.", self),
+          tcod::colors::RED,
+        );
     }
   }
 

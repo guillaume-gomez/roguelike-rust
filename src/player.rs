@@ -24,14 +24,15 @@ use crate::enemy::Ai;
 
 
 enum UseResult {
-    UsedUp,
-    Cancelled,
+  UsedUp,
+  UsedAndKept,
+  Cancelled,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
   object: Object,
-  level: i32
+  level: i32,
 }
 
 impl Player {
@@ -45,14 +46,15 @@ impl Player {
       blocks: true,
       alive: true,
       fighter:  Some(Fighter {
-        max_hp: 30,
-        hp: 30,
-        defense: 2,
+        max_hp: 100,
+        hp: 100,
+        defense: 1,
         xp: 0,
-        power: 5
+        power: 4
       }),
       item: None,
-      always_visible: true
+      always_visible: true,
+      equipment: None
     };
     Player {
       object,
@@ -149,7 +151,8 @@ impl Player {
         Item::Heal => Player::cast_heal,
         Item::Lightning => Player::cast_lightning,
         Item::Confuse => Player::cast_confuse,
-        Item::Fireball => Player::cast_fireball
+        Item::Fireball => Player::cast_fireball,
+        Item::Equipment => Player::toggle_equipment,
       };
       match on_use(self, game, tcod, inventory_id, collectibles, enemies) {
         UseResult::UsedUp => {
@@ -159,6 +162,7 @@ impl Player {
         UseResult::Cancelled => {
           game.messages.add("Cancelled", tcod::colors::WHITE);
         }
+        UseResult::UsedAndKept => {} // do nothing
       }
     } else {
       game.messages.add(
@@ -275,6 +279,20 @@ impl Player {
     }
     self.object.fighter.as_mut().unwrap().xp += xp_to_gain;
     UseResult::UsedUp
+  }
+
+
+  fn toggle_equipment(&mut self, game: &mut Game, _tcod: &mut Tcod, inventory_id: usize, _collectibles: &mut [Object], _enemies: &mut[Enemy] ) -> UseResult {
+    let equipment = match game.inventory[inventory_id].equipment {
+        Some(equipment) => equipment,
+        None => return UseResult::Cancelled,
+    };
+    if equipment.equipped {
+        game.inventory[inventory_id].dequip(&mut game.messages);
+    } else {
+        game.inventory[inventory_id].equip(&mut game.messages);
+    }
+    UseResult::UsedAndKept
 }
 
   pub fn closest_monster(&self, tcod: &Tcod, enemies: &[Enemy], max_range: i32) -> Option<usize> {
