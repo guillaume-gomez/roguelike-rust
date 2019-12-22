@@ -1,6 +1,6 @@
 pub struct Transition {
-  level: u32,
-  value: u32,
+  pub level: u32,
+  pub value: u32,
 }
 
 pub fn from_dungeon_level(table: &[Transition], level: u32) -> u32 {

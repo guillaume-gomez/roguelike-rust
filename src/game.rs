@@ -1,3 +1,5 @@
+use crate::transition::Transition;
+use crate::transition::from_dungeon_level;
 use crate::Tcod;
 use serde::{Deserialize, Serialize};
 use crate::enemy::Enemy;
@@ -29,7 +31,7 @@ pub struct Game {
 impl Game {
   pub fn new(player: &mut Player, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Object> ) -> Self {
     Game { 
-      map: make_map(player, enemies, collectibles),
+      map: make_map(player, enemies, collectibles, 1),
       messages: Messages::new(),
       inventory: vec![],
       dungeon_level: 1,
@@ -85,11 +87,11 @@ pub fn next_level(tcod: &mut Tcod, game: &mut Game, player: &mut Player, enemies
         tcod::colors::RED,
     );
     game.dungeon_level += 1;
-    game.map = make_map(player, enemies, collectibles);
+    game.map = make_map(player, enemies, collectibles, game.dungeon_level);
     initialise_fov(tcod, &game.map);
 }
 
-fn make_map(player: &mut Player, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Object>) -> Map {
+fn make_map(player: &mut Player, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Object>, level: u32) -> Map {
   collectibles.clear();
   enemies.clear();
   let mut rooms = vec![];
@@ -116,7 +118,7 @@ fn make_map(player: &mut Player, enemies: &mut Vec<Enemy>, collectibles: &mut Ve
       // "paint" it to the map's tiles
       create_room(new_room, &mut map);
 
-      place_objects(new_room, enemies, collectibles, &mut map);
+      place_objects(new_room, enemies, collectibles, &mut map, level);
 
       // center coordinates of the new room, will be useful later
       let (new_x, new_y) = new_room.center();
@@ -173,9 +175,38 @@ fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
   }
 }
 
-fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Object>, map: &Map) {
+fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Object>, map: &Map, level: u32) {
+  let max_monsters = from_dungeon_level(
+    &[
+      Transition { level: 1, value: 2 },
+      Transition { level: 4, value: 3 },
+      Transition { level: 6, value: 5 },
+    ],
+    level,
+  );
+
   // choose random number of monsters
-  let num_monsters = rand::thread_rng().gen_range(0, MAX_ROOM_MONSTERS + 1);
+  let num_monsters = rand::thread_rng().gen_range(0, max_monsters + 1);
+
+  // monster random table
+  let troll_chance = from_dungeon_level(
+    &[
+      Transition {
+          level: 3,
+          value: 15,
+      },
+      Transition {
+          level: 5,
+          value: 30,
+      },
+      Transition {
+          level: 7,
+          value: 60,
+      },
+    ],
+    level,
+  );
+
   
   //clone => dirty 
   let object_enemies = enemies
@@ -197,7 +228,7 @@ fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Ob
             item: "orc",
         },
         Weighted {
-            weight: 20,
+            weight: troll_chance,
             item: "troll",
         },
     ];
@@ -219,8 +250,16 @@ fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Ob
     }
   }
 
+  let max_items = from_dungeon_level(
+    &[
+      Transition { level: 1, value: 1 },
+      Transition { level: 4, value: 2 },
+    ],
+    level,
+  );
+
   // choose random number of items
-  let num_items = rand::thread_rng().gen_range(0, MAX_ROOM_ITEMS + 1);
+  let num_items = rand::thread_rng().gen_range(0, max_items + 1);
 
   // item random table
   let item_chances = &mut [
@@ -229,16 +268,39 @@ fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Ob
           item: Item::Heal,
       },
       Weighted {
-          weight: 10,
+          weight: from_dungeon_level(
+            &[Transition {
+                level: 4,
+                value: 25,
+            }],
+            level)
+          ,
           item: Item::Lightning,
       },
       Weighted {
-          weight: 10,
+          weight: from_dungeon_level(
+            &[Transition {
+              level: 6,
+              value: 25,
+            }],
+            level)
+          ,
           item: Item::Fireball,
       },
       Weighted {
-          weight:10,
+          weight: from_dungeon_level(
+            &[Transition {
+              level: 2,
+              value: 10,
+            }],
+            level)
+          ,
           item: Item::Confuse,
+      },
+      Weighted 
+        {
+          weight: 1000,
+          item: Item::Equipment
       },
   ];
   let item_choice = WeightedChoice::new(item_chances);
@@ -255,6 +317,7 @@ fn place_objects(room: Rect, enemies: &mut Vec<Enemy>, collectibles: &mut Vec<Ob
         Item::Lightning => { Object::create_lighting_bolt(x, y) }
         Item::Fireball => { Object::create_fireball(x, y) }
         Item::Confuse => { Object::create_confuse_potion(x, y) }
+        Item::Equipment => { Object::create_sword(x, y) }
       };
       collectibles.push(item);
     }
