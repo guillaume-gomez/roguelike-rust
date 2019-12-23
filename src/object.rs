@@ -194,6 +194,19 @@ impl Object {
     }
   }
 
+  pub fn get_equipped_in_slot(slot: Slot, inventory: &[Object]) -> Option<usize> {
+    for (inventory_id, item) in inventory.iter().enumerate() {
+      if item
+        .equipment
+        .as_ref()
+        .map_or(false, |e| e.equipped && e.slot == slot)
+      {
+        return Some(inventory_id);
+      }
+    }
+    None
+  }
+
   pub fn move_by(&mut self, dx: i32, dy: i32, game: &Game, other_objects: &[Object]) {
     let (x, y) = self.pos();
     if !is_blocked(x + dx, y + dy, &game.map, other_objects) {
