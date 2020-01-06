@@ -316,11 +316,10 @@ fn render_game(tcod: &mut Tcod, game: &Game, player: &Player, enemies: &[Enemy],
   }
 
   // draw all enemies in the list
-  // TODO UNCOMMENT FOV NEXT TIME
   for enemy in enemies {
-    //if tcod.fov.is_in_fov(Enemy.get_x(), Enemy.get_y()) {
+    if tcod.fov.is_in_fov(Enemy.get_x(), Enemy.get_y()) {
       enemy.draw(&mut tcod.con);
-    //}
+    }
   }
   //render player
   player.draw(&mut tcod.con);
