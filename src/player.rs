@@ -287,6 +287,7 @@ impl Player {
         Some(equipment) => equipment,
         None => return UseResult::Cancelled,
     };
+    
     if equipment.equipped {
         game.inventory[inventory_id].dequip(&mut game.messages);
     } else {
