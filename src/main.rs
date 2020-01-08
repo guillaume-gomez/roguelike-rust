@@ -317,7 +317,7 @@ fn render_game(tcod: &mut Tcod, game: &Game, player: &Player, enemies: &[Enemy],
 
   // draw all enemies in the list
   for enemy in enemies {
-    if tcod.fov.is_in_fov(Enemy.get_x(), Enemy.get_y()) {
+    if tcod.fov.is_in_fov(enemy.get_x(), enemy.get_y()) {
       enemy.draw(&mut tcod.con);
     }
   }
